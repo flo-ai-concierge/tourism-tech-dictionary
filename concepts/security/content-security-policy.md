@@ -48,5 +48,37 @@ Every time you integrate a new external service (maps, analytics, fonts, image C
 - `'unsafe-eval'` and `'unsafe-inline'` weaken protections — avoid if possible, but some libraries (like Tailwind dev mode) require them.
 - Browser cached the old policy? Hard-refresh or wait out the max-age.
 
+## iframe-specific directives: frame-src vs frame-ancestors
+
+Two CSP directives specifically control iframes — and they're **not the same thing**:
+
+| Directive | Controls | Direction |
+|---|---|---|
+| `frame-src` | What iframes **this page** can load | Outbound — what can I pull in? |
+| `frame-ancestors` | Who is allowed to **embed this page** in their iframe | Inbound — who can host me? |
+
+**`frame-src`** — if your page needs to embed a YouTube video, you must add `https://www.youtube.com` to `frame-src`. Without it, the `<iframe src="...youtube.com/embed/...">` is blocked by the browser even though you control the parent page.
+
+**`frame-ancestors`** — controls whether your page can be embedded elsewhere. `frame-ancestors 'none'` means nobody can embed your page (defense against clickjacking). `frame-ancestors 'self'` means only pages on your own domain can embed it — useful for admin preview panels where an admin page iframes the guest-facing boarding pass.
+
+**The split pattern (per-route headers in Next.js):**
+```js
+// Guest boarding pass — allow embedding by admin on same origin
+{ source: "/floex/(.*)", headers: [
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" }
+]},
+// Everything else — deny all embedding
+{ source: "/((?!floex\\/).)*", headers: [
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" }
+]},
+```
+
+The negative lookahead `((?!floex\\/).)*` means "match all paths that do NOT start with `floex/`".
+
+**Tourism analogy:** `frame-src` is the hotel's approved vendor list — only licensed vendors can operate on the property. `frame-ancestors` is the hotel's branding policy — only our own properties can display our menus on their lobby screens; random third parties cannot.
+
 ## Learned from
-FLOHOM Marina Placement Dashboard deploy (Apr 21, 2026). After shipping the map, tiles failed to load in production. The CSP's `img-src` directive only allowed `self`, `hostaway-platform.s3`, and `*.googleusercontent.com`. CartoDB tile CDN was silently blocked. Added `https://*.basemaps.cartocdn.com` and `https://*.openstreetmap.org` to `img-src`, redeployed, tiles loaded. Dev environment didn't catch it because Next.js dev mode doesn't apply production CSP.
+- FLOHOM Marina Placement Dashboard deploy (Apr 21, 2026). After shipping the map, tiles failed to load in production. The CSP's `img-src` directive only allowed `self`, `hostaway-platform.s3`, and `*.googleusercontent.com`. CartoDB tile CDN was silently blocked. Added `https://*.basemaps.cartocdn.com` and `https://*.openstreetmap.org` to `img-src`, redeployed, tiles loaded. Dev environment didn't catch it because Next.js dev mode doesn't apply production CSP.
+- FLOHOM FLOx Config admin preview panel (May 6, 2026). Boarding pass rendered in a phone-framed iframe inside the admin — blocked by `X-Frame-Options: DENY` and `frame-ancestors 'none'` on the global rule. Fixed with per-route header split: `/floex/` routes get SAMEORIGIN + `frame-ancestors 'self'`; everything else stays DENY.
