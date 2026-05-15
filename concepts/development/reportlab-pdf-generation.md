@@ -59,3 +59,5 @@ reportlab coordinates originate from the **bottom-left** of the page (like a mat
 
 ## Learned from
 FLOHOM FLOx Guest Experiences PDF (May 6, 2026). Vendor reference sheet for Missy — 5 private chefs, 3 massage providers, nail salon, laundry service, yoga warning. Two-page PDF with FLOHOM brand colors (charcoal/teal/brown/cream), `KeepTogether` cards to prevent split vendor entries across pages, and a per-page callback for the teal header bar and footer.
+
+FLOHOM GRVA Contracts (May 14, 2026). Used Platypus to re-generate two fully formatted 6-page independent contractor agreements after a new clause (Section 3.7 — QUO phone support) was required post-signature. `HRFlowable` used for horizontal dividers between articles, `Table` for the compensation schedule, `ParagraphStyle` for heading/body/bullet variants.
